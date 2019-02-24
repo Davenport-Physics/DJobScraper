@@ -1,0 +1,12 @@
+{
+	"name": "djobscraper",
+	"authors": [
+		"Emma Davenport"
+	],
+	"dependencies": {
+		"d2sqlite3": "~>0.18.1"
+	},
+	"description": "A job web scraper written in D.",
+	"copyright": "Copyright © 2019, Emma Davenport",
+	"license": "CC0"
+}
