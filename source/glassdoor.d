@@ -7,6 +7,7 @@ import std.algorithm;
 import std.string;
 import std.net.curl;
 import std.json;
+import d2sqlite3;
 
 static int[string] glassdoor_ids;
 
@@ -15,6 +16,14 @@ static int[string] glassdoor_ids;
 https://www.glassdoor.com/Job/jobs.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=Junior+Developer&sc.keyword=Junior+Developer&locT=C&locId=1140065&jobType=
 
 */
+
+struct job_posting {
+
+    string url;
+    float percentage;
+    string matched_text;
+
+};
 
 void InitGlassDoorIDs() {
 
@@ -29,11 +38,22 @@ void InitGlassDoorIDs() {
 
 }
 
+void InitGlassDoorDB() {
+
+    auto db = Database("DJSCRAPER.db");
+    db.run("DROP TABLE IF EXISTS glassdoor");
+    db.run("CREATE TABLE glassdoor (job text, percentage real, matched text)");
+
+    db.close();
+
+}
+
 void ScrapeGlassdoor(string job, string location, string[] keywords) {
 
     string search_html   = GetRawGlassdoorPage(job, location);
     int total_page_count = GetTotalGlassdoorPagesForSearch(search_html);
     string[] all_urls    = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
+    ParseJobURLSForRelevantPostings(all_urls, keywords);
     WriteAllGlassDoorUrlsToFile(StripAllUrlsOfDuplicates(all_urls));
 
 }
@@ -47,6 +67,44 @@ void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
 
     }
     fp.close();
+
+}
+
+void WriteAllGlassDoorUrlsToSQLTable(string[] all_urls) {
+
+}
+
+job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywords) {
+
+
+    job_posting[] posts;
+
+    foreach(url; all_urls) {
+
+        string raw_dat = to!string(get(url));
+        string words_that_matched = "";
+        float total_words_matched = 0;
+        foreach(words; keywords) {
+
+            if (canFind(raw_dat, words)) {
+
+                words_that_matched ~= words;
+                total_words_matched += 1f;
+
+            }
+
+        }
+        if (total_words_matched == 0) {
+            continue;
+        }
+        float percentage = total_words_matched/to!float(keywords.length);
+        job_posting post = {url:url, percentage:percentage, matched_text:words_that_matched};
+        posts ~= post;
+
+    }
+
+    return posts;
+
 
 }
 
