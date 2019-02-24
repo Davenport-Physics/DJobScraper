@@ -93,16 +93,9 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
         string raw_dat = to!string(get(url));
         string words_that_matched = "";
         int total_words_matched = 0;
-        foreach(words; keywords) {
 
-            if (canFind(raw_dat, words)) {
+        SetWordsThatMatched(raw_dat, keywords, words_that_matched, total_words_matched);
 
-                words_that_matched ~= words;
-                total_words_matched += 1;
-
-            }
-
-        }
         if (total_words_matched == 0) {
             continue;
         }
@@ -114,6 +107,21 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
 
     return posts;
 
+
+}
+
+void SetWordsThatMatched(string raw_dat, string[] keywords, ref string words_that_matched, ref int total_words_matched) {
+
+    foreach(words; keywords) {
+
+        if (canFind(raw_dat, words)) {
+
+            words_that_matched  ~= words ~ " ";
+            total_words_matched += 1;
+
+        }
+
+    }
 
 }
 
@@ -191,7 +199,7 @@ string[] StripAllUrlsOfDuplicates(string[] all_urls) {
 
 string GetRawGlassdoorPage(string job, string location) {
 
-    string url = "" ~ "https://www.glassdoor.com/Job/jobs.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=";
+    string url = "https://www.glassdoor.com/Job/jobs.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=";
     url ~= job.replace(" ", "+");
     url ~= "&sc.keyword=" ~ job.replace(" ", "+") ~ "&locT=C&locId=" ~ to!string(glassdoor_ids[location]) ~ "&jobType=";
 
