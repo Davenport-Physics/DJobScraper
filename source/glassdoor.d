@@ -27,6 +27,15 @@ struct job_posting {
 
 };
 
+struct user_data {
+
+    string[] jobs;
+    string[] locations;
+    string[] keywords;
+    string[] companies_to_avoid;
+
+}
+
 void InitGlassDoorIDs() {
 
     glassdoor_ids["Dallas,Tx"]         = 1139977;
@@ -45,18 +54,16 @@ void InitGlassDoorDB() {
     auto db = Database("DJSCRAPER.db");
     db.run("DROP TABLE IF EXISTS glassdoor");
     db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, within_three_days int)");
-
     db.close();
 
 }
 
-void ScrapeGlassdoor(string job, string location, string[] keywords) {
+void ScrapeGlassdoor(user_data mydata) {
 
-    string search_html   = GetRawGlassdoorPage(job, location);
+    string search_html   = GetRawGlassdoorPage(mydata.jobs[0], mydata.locations[0]);
     int total_page_count = GetTotalGlassdoorPagesForSearch(search_html);
     string[] all_urls    = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
-    WriteAllGlassDoorUrlsToSQLTable(ParseJobURLSForRelevantPostings(all_urls, keywords));
-    //WriteAllGlassDoorUrlsToFile(StripAllUrlsOfDuplicates(all_urls));
+    WriteAllGlassDoorUrlsToSQLTable(ParseJobURLSForRelevantPostings(all_urls, mydata.keywords));
 
 }
 
