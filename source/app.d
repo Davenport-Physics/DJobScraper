@@ -6,7 +6,7 @@ void main() {
 
     InitGlassDoorIDs();
     InitGlassDoorDB();
-    ScrapeGlassdoor("Junior Developer", "Dallas,Tx", [""]);
+    ScrapeGlassdoor("Junior Developer", "Dallas,Tx", ["java", "C++", "entry level", "angularjs", "Microcontroller"]);
 
 }
 

@@ -53,8 +53,8 @@ void ScrapeGlassdoor(string job, string location, string[] keywords) {
     string search_html   = GetRawGlassdoorPage(job, location);
     int total_page_count = GetTotalGlassdoorPagesForSearch(search_html);
     string[] all_urls    = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
-    ParseJobURLSForRelevantPostings(all_urls, keywords);
-    WriteAllGlassDoorUrlsToFile(StripAllUrlsOfDuplicates(all_urls));
+    WriteAllGlassDoorUrlsToSQLTable(ParseJobURLSForRelevantPostings(all_urls, keywords));
+    //WriteAllGlassDoorUrlsToFile(StripAllUrlsOfDuplicates(all_urls));
 
 }
 
@@ -70,7 +70,16 @@ void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
 
 }
 
-void WriteAllGlassDoorUrlsToSQLTable(string[] all_urls) {
+void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings) {
+
+    auto db = Database("DJSCRAPER.db");
+    Statement stmt = db.prepare("INSERT INTO glassdoor (job, percentage, matched) VALUES (:job, :percentage, :matched)");
+    foreach(post; all_relevant_postings) {
+
+        stmt.inject(post.url, post.percentage, post.matched_text);
+
+    }
+    db.close();
 
 }
 
@@ -83,13 +92,13 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
 
         string raw_dat = to!string(get(url));
         string words_that_matched = "";
-        float total_words_matched = 0;
+        int total_words_matched = 0;
         foreach(words; keywords) {
 
             if (canFind(raw_dat, words)) {
 
                 words_that_matched ~= words;
-                total_words_matched += 1f;
+                total_words_matched += 1;
 
             }
 
@@ -97,14 +106,46 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
         if (total_words_matched == 0) {
             continue;
         }
-        float percentage = total_words_matched/to!float(keywords.length);
-        job_posting post = {url:url, percentage:percentage, matched_text:words_that_matched};
-        posts ~= post;
+
+        float percentage = BoostPercentageByDayPosted(to!float(total_words_matched) / to!float(keywords.length), raw_dat);
+        posts ~= GetJobPosting(url, percentage, words_that_matched);
 
     }
 
     return posts;
 
+
+}
+
+job_posting GetJobPosting(string url, float percentage, string words_that_matched) {
+
+    job_posting post = {url:url, percentage:percentage, matched_text:words_that_matched};
+    return post;
+
+}
+
+float BoostPercentageByDayPosted(float percentage, string raw_dat) {
+
+    auto day_posted         = regex(`\d+ days ago`);
+    string day_posted_split = matchFirst(raw_dat, day_posted)[0];
+    if (!day_posted_split.empty) {
+
+        int day = to!int(day_posted_split.split(" ")[0]);
+        if (day < 4) {
+
+            percentage += 10.0f;
+
+        } else {
+
+            percentage -= 10.0f;
+
+        }
+
+    }
+    if (percentage < 0.0f) {
+        percentage = 0.0f;
+    }
+    return percentage;
 
 }
 
