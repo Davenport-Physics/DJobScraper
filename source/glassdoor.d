@@ -77,6 +77,7 @@ void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings) {
         stmt.inject(post.raw_html, post.url, post.percentage, post.matched_text, post.within_three_days);
 
     }
+    stmt.finalize();
     db.close();
 
 }
@@ -208,7 +209,7 @@ string[] ScrapeAllRelatedPagesGlassdoor(string search_html, int total_page_count
     string link_style = GetAdditionalGlassdoorPagesLinkOnly(search_html);
     string current_html_page = GetAdditionalGlassdoorPages(search_html);
 
-    for (size_t i = 1; i < total_page_count-1; i++) {
+    for (size_t i = 1; i < total_page_count; i++) {
 
         try {
 
