@@ -7,6 +7,7 @@ import std.algorithm;
 import std.string;
 import std.net.curl;
 import std.json;
+import std.parallelism;
 import d2sqlite3;
 import sharedstructs;
 
@@ -46,10 +47,12 @@ void InitGlassDoorDB() {
 
 void ScrapeGlassdoor(user_data mydata) {
 
-    string search_html   = GetRawGlassdoorPage(mydata.jobs[0], mydata.locations[0]);
-    int total_page_count = GetTotalGlassdoorPagesForSearch(search_html);
-    string[] all_urls    = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
-    WriteAllGlassDoorUrlsToSQLTable(ParseJobURLSForRelevantPostings(all_urls, mydata.keywords));
+    string search_html      = GetRawGlassdoorPage(mydata.jobs[0], mydata.locations[0]);
+    int total_page_count    = GetTotalGlassdoorPagesForSearch(search_html);
+    string[] all_urls       = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
+    job_posting[] job_posts = ParseJobURLSForRelevantPostings(all_urls, mydata.keywords);
+    DecreaseRelevancyOfPostings(job_posts, mydata.companies_to_avoid);
+    WriteAllGlassDoorUrlsToSQLTable(job_posts);
 
 }
 
@@ -78,12 +81,32 @@ void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings) {
 
 }
 
+void DecreaseRelevancyOfPostings(ref job_posting[] job_posts, string[] companies_to_avoid) {
+
+    foreach (ref post; job_posts) {
+
+        foreach (company; companies_to_avoid) {
+
+            if (canFind(post.raw_html, company)) {
+
+                post.percentage -= 0.25f;
+                break;
+
+            }
+
+        }
+
+    }
+
+}
+
 job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywords) {
 
 
-    job_posting[] posts;
+    job_posting[] posts = new job_posting[all_urls.length];
 
-    foreach(url; all_urls) {
+    defaultPoolThreads(4);
+    foreach(idx, url; taskPool.parallel(all_urls)) {
 
         string raw_dat = to!string(get(url));
         string words_that_matched = "";
@@ -96,7 +119,7 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
         }
 
         float percentage = BoostPercentageByDayPosted(to!float(total_words_matched) / to!float(keywords.length), raw_dat);
-        posts ~= GetJobPosting(raw_dat, url, percentage, words_that_matched, to!int(IsDayWithinThreeDays(raw_dat)));
+        posts[idx] = GetJobPosting(raw_dat, url, percentage, words_that_matched, to!int(IsDayWithinThreeDays(raw_dat)));
 
     }
 
