@@ -50,7 +50,7 @@ void ScrapeGlassdoor(user_data mydata) {
     string search_html      = GetRawGlassdoorPage(mydata.jobs[0], mydata.locations[0]);
     int total_page_count    = GetTotalGlassdoorPagesForSearch(search_html);
     string[] all_urls       = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
-    job_posting[] job_posts = ParseJobURLSForRelevantPostings(all_urls, mydata.keywords);
+    job_posting[] job_posts = ParseJobURLSForRelevantPostings(StripAllUrlsOfDuplicates(all_urls), mydata.keywords);
     DecreaseRelevancyOfPostings(job_posts, mydata.companies_to_avoid);
     WriteAllGlassDoorUrlsToSQLTable(job_posts);
 
@@ -231,14 +231,29 @@ string[] ScrapeAllRelatedPagesGlassdoor(string search_html, int total_page_count
 
 string[] StripAllUrlsOfDuplicates(string[] all_urls) {
 
+    writeln("Checking dups");
     string[] no_duplicates;
-    for (size_t i = 0; i < all_urls.length;i++) {
+    no_duplicates ~= all_urls[0];
+    auto url_id = regex(`jobListingId=\d+`);
 
-        if (i % 2 == 0) {
-            no_duplicates ~= all_urls[i];
+    foreach (url; all_urls) {
+
+        bool found = false;
+        foreach (no_dups; no_duplicates) {
+
+            auto dup_match = (findSplit(no_dups, "jobListingId=")[2]);
+            auto url_match = (findSplit(url, "jobListingId=")[2]);
+            if (url_match == dup_match){
+                found = true;
+            }
+
+        }
+        if (!found) {
+            no_duplicates ~= url;
         }
 
     }
+
     return no_duplicates;
 
 }
