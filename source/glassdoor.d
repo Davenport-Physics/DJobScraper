@@ -8,14 +8,9 @@ import std.string;
 import std.net.curl;
 import std.json;
 import d2sqlite3;
+import sharedstructs;
 
 static int[string] glassdoor_ids;
-
-/*
-
-https://www.glassdoor.com/Job/jobs.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=Junior+Developer&sc.keyword=Junior+Developer&locT=C&locId=1140065&jobType=
-
-*/
 
 struct job_posting {
 
@@ -26,15 +21,6 @@ struct job_posting {
     int within_three_days;
 
 };
-
-struct user_data {
-
-    string[] jobs;
-    string[] locations;
-    string[] keywords;
-    string[] companies_to_avoid;
-
-}
 
 void InitGlassDoorIDs() {
 
@@ -150,9 +136,9 @@ job_posting GetJobPosting(string raw_dat, string url, float percentage, string w
 float BoostPercentageByDayPosted(float percentage, string raw_dat) {
 
     if (IsDayWithinThreeDays(raw_dat) < 4) {
-        percentage += 10.0f;
+        percentage += .1f;
     } else {
-        percentage -= 10.0f;
+        percentage -= .1f;
     }
 
     if (percentage < 0.0f) {

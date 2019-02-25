@@ -5,6 +5,7 @@ import std.conv;
 import std.algorithm;
 import linkedin;
 import glassdoor;
+import sharedstructs;
 
 static user_data mydata;
 
@@ -17,7 +18,7 @@ void main() {
         ParseMyDataJson();
         StartScraping();
     } catch (Exception e) {
-        writeln("Couldn't find mydata.json");
+        writeln(e);
     }
 
 }
@@ -46,6 +47,7 @@ void ParseMyDataJson() {
     SetGenericDataWithJson(mydata.locations, mydata_json["Locations"].array);
     SetGenericDataWithJson(mydata.keywords, mydata_json["Keywords"].array);
     SetGenericDataWithJson(mydata.companies_to_avoid, mydata_json["AvoidCompanies"].array);
+    SetGenericLoginInformation(mydata.linkedin_credentials, "LinkedInInfo", mydata_json);
 
 }
 
@@ -54,6 +56,13 @@ void SetGenericDataWithJson(ref string[] info, JSONValue[] json_array) {
     foreach(segment; json_array) {
         info ~= segment.str;
     }
+
+}
+
+void SetGenericLoginInformation(ref login_credentials creds, string website_info, JSONValue mydata_json) {
+
+    creds.username = mydata_json[website_info]["Username"].str;
+    creds.password = mydata_json[website_info]["Password"].str;
 
 }
 
