@@ -8,6 +8,7 @@ import std.string;
 import std.net.curl;
 import std.json;
 import std.parallelism;
+import core.cpuid;
 import d2sqlite3;
 import sharedstructs;
 
@@ -47,10 +48,31 @@ void InitGlassDoorDB() {
 
 void ScrapeGlassdoor(user_data mydata) {
 
-    string search_html      = GetRawGlassdoorPage(mydata.jobs[0], mydata.locations[0]);
+    string[] all_urls;
+    job_posting[] job_posts;
+    foreach(job; mydata.jobs) {
+
+        foreach(location; mydata.locations) {
+
+            all_urls ~= ScrapeJobAndLocationWithKeywords(mydata, location, job);
+
+        }
+
+    }
+    job_posts = ParseJobURLSForRelevantPostings(StripAllUrlsOfDuplicates(all_urls), mydata.keywords);
+    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts);
+
+}
+
+string[] ScrapeJobAndLocationWithKeywords(user_data mydata, string location, string job) {
+
+    string search_html      = GetRawGlassdoorPage(job, location);
     int total_page_count    = GetTotalGlassdoorPagesForSearch(search_html);
-    string[] all_urls       = ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
-    job_posting[] job_posts = ParseJobURLSForRelevantPostings(StripAllUrlsOfDuplicates(all_urls), mydata.keywords);
+    return ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
+}
+
+void HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(user_data mydata, job_posting[] job_posts) {
+
     DecreaseRelevancyOfPostings(job_posts, mydata.companies_to_avoid);
     WriteAllGlassDoorUrlsToSQLTable(job_posts);
 
@@ -106,7 +128,7 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
 
     job_posting[] posts = new job_posting[all_urls.length];
 
-    defaultPoolThreads(4);
+    defaultPoolThreads(coresPerCPU()*2);
     foreach(idx, url; taskPool.parallel(all_urls)) {
 
         string raw_dat = to!string(get(url));
@@ -231,7 +253,6 @@ string[] ScrapeAllRelatedPagesGlassdoor(string search_html, int total_page_count
 
 string[] StripAllUrlsOfDuplicates(string[] all_urls) {
 
-    writeln("Checking dups");
     string[] no_duplicates;
     no_duplicates ~= all_urls[0];
     auto url_id = regex(`jobListingId=\d+`);
