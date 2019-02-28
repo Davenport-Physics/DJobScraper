@@ -76,7 +76,7 @@ void SetGenericLoginInformation(ref login_credentials creds, string website_info
 
 void StartScraping() {
 
-    StartScrapingGlassdoor();
+    //StartScrapingGlassdoor();
     StartScrapingCareerbuilder();
 
 }

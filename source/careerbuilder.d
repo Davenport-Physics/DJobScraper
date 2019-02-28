@@ -122,7 +122,7 @@ string GetCareerBuilderStandardUrl(string location, string job) {
     string url = "https://www.careerbuilder.com/jobs-"~
              job.replace(" ", "-")~
              "-in-"~
-             location;
+             location.toLower();
 
     return url;
 
@@ -135,7 +135,7 @@ string[] StripPageOfUrlsCareerbuilder(string raw_dat) {
     while (canFind(current_dat, "href=\"/job/")) {
 
         auto split = findSplit(findSplit(current_dat, "href=\"/job/")[2], "cbnsv\"");
-        all_urls_in_page ~= "https://www.careerbuilder.com/jobs/" ~ split[0] ~ "cbnsv";
+        all_urls_in_page ~= "https://www.careerbuilder.com/job/" ~ split[0] ~ "cbnsv";
         current_dat = split[2];
 
     }
