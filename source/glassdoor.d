@@ -14,18 +14,6 @@ import sharedstructs;
 
 static int[string] glassdoor_ids;
 
-struct job_posting {
-
-    string raw_html;
-    string url;
-    float percentage;
-    string matched_text;
-    string company_name;
-    int within_three_days;
-    int within_five_days;
-
-};
-
 void InitGlassDoorIDs() {
 
     glassdoor_ids["Dallas,Tx"]         = 1139977;
@@ -45,7 +33,7 @@ void InitGlassDoorDB() {
     db.run("DROP TABLE IF EXISTS glassdoor");
     db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, company_name text, "~
            "within_three_days int, within_five_days int)");
-    
+
     db.close();
 
 }

@@ -16,3 +16,15 @@ struct user_data {
     login_credentials linkedin_credentials;
 
 }
+
+struct job_posting {
+
+    string raw_html;
+    string url;
+    float percentage;
+    string matched_text;
+    string company_name;
+    int within_three_days;
+    int within_five_days;
+
+};
