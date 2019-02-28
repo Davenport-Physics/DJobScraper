@@ -43,7 +43,9 @@ void InitGlassDoorDB() {
 
     auto db = Database("DJSCRAPER.db");
     db.run("DROP TABLE IF EXISTS glassdoor");
-    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, company_name text, within_three_days int, within_five_days int)");
+    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, company_name text, "~
+           "within_three_days int, within_five_days int)");
+    
     db.close();
 
 }
@@ -95,11 +97,18 @@ void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
 void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings) {
 
     auto db = Database("DJSCRAPER.db");
-    Statement stmt = db.prepare("INSERT INTO glassdoor (raw_html, job, percentage, matched, company_name, within_three_days, within_five_days) VALUES (:raw_html, :job, :percentage, :matched, :company_name, :within_three_days, :within_five_days)");
+    Statement stmt = db.prepare("INSERT INTO glassdoor (raw_html, job, percentage, matched, "~
+                                "company_name, within_three_days, within_five_days) VALUES "~
+                                "(:raw_html, :job, :percentage, :matched, :company_name, "~
+                                ":within_three_days, :within_five_days)");
+
     foreach(post; all_relevant_postings) {
 
         if (post.url.length != 0) {
-            stmt.inject(post.raw_html, post.url, post.percentage, post.matched_text, post.company_name, post.within_three_days, post.within_five_days);
+            stmt.inject(post.raw_html, post.url, 
+                        post.percentage, post.matched_text, 
+                        post.company_name, post.within_three_days, 
+                        post.within_five_days);
         }
 
     }
@@ -322,7 +331,9 @@ string[] StripAllUrlsOfDuplicates(string[] all_urls) {
 
 string GetRawGlassdoorPage(string job, string location) {
 
-    string url = "https://www.glassdoor.com/Job/jobs.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=";
+    string url = "https://www.glassdoor.com/Job/jobs.htm?suggestCount="~
+                 "0&suggestChosen=false&clickSource=searchBtn&typedKeyword=";
+
     url ~= job.replace(" ", "+");
     url ~= "&sc.keyword=" ~ job.replace(" ", "+") ~ "&locT=C&locId=" ~ to!string(glassdoor_ids[location]) ~ "&jobType=";
 
