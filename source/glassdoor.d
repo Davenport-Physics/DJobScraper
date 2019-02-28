@@ -20,7 +20,9 @@ struct job_posting {
     string url;
     float percentage;
     string matched_text;
+    string company_name;
     int within_three_days;
+    int within_five_days;
 
 };
 
@@ -41,7 +43,7 @@ void InitGlassDoorDB() {
 
     auto db = Database("DJSCRAPER.db");
     db.run("DROP TABLE IF EXISTS glassdoor");
-    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, within_three_days int)");
+    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, company_name text, within_three_days int, within_five_days int)");
     db.close();
 
 }
@@ -93,10 +95,12 @@ void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
 void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings) {
 
     auto db = Database("DJSCRAPER.db");
-    Statement stmt = db.prepare("INSERT INTO glassdoor (raw_html, job, percentage, matched, within_three_days) VALUES (:raw_html, :job, :percentage, :matched, :within_three_days)");
+    Statement stmt = db.prepare("INSERT INTO glassdoor (raw_html, job, percentage, matched, company_name, within_three_days, within_five_days) VALUES (:raw_html, :job, :percentage, :matched, :company_name, :within_three_days, :within_five_days)");
     foreach(post; all_relevant_postings) {
 
-        stmt.inject(post.raw_html, post.url, post.percentage, post.matched_text, post.within_three_days);
+        if (post.url.length != 0) {
+            stmt.inject(post.raw_html, post.url, post.percentage, post.matched_text, post.company_name, post.within_three_days, post.within_five_days);
+        }
 
     }
     stmt.finalize();
@@ -128,7 +132,7 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
 
     job_posting[] posts = new job_posting[all_urls.length];
 
-    defaultPoolThreads(coresPerCPU()*2);
+    defaultPoolThreads(coresPerCPU()*2 - 1);
     foreach(idx, url; taskPool.parallel(all_urls)) {
 
         string raw_dat = to!string(get(url));
@@ -142,7 +146,7 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
         }
 
         float percentage = BoostPercentageByDayPosted(to!float(total_words_matched) / to!float(keywords.length), raw_dat);
-        posts[idx] = GetJobPosting(raw_dat, url, percentage, words_that_matched, to!int(IsDayWithinThreeDays(raw_dat)));
+        posts[idx] = GetJobPosting(raw_dat, url, percentage, words_that_matched);
 
     }
 
@@ -166,14 +170,16 @@ void SetWordsThatMatched(string raw_dat, string[] keywords, ref string words_tha
 
 }
 
-job_posting GetJobPosting(string raw_dat, string url, float percentage, string words_that_matched, int within_three_days) {
+job_posting GetJobPosting(string raw_dat, string url, float percentage, string words_that_matched) {
 
     job_posting post = {
         raw_html:raw_dat, 
         url:url,
         percentage:percentage, 
         matched_text:words_that_matched,
-        within_three_days:within_three_days
+        company_name:GetCompanyNameGlassdoor(raw_dat),
+        within_three_days:to!int(IsDayWithinThreeDays(raw_dat)),
+        within_five_days:to!int(IsDayWithinFiveDays(raw_dat))
     };
     return post;
 
@@ -181,8 +187,10 @@ job_posting GetJobPosting(string raw_dat, string url, float percentage, string w
 
 float BoostPercentageByDayPosted(float percentage, string raw_dat) {
 
-    if (IsDayWithinThreeDays(raw_dat) < 4) {
+    if (IsDayWithinThreeDays(raw_dat)) {
         percentage += .1f;
+    } else if (IsDayWithinFiveDays(raw_dat)) {
+        percentage += .05;
     } else {
         percentage -= .1f;
     }
@@ -196,6 +204,18 @@ float BoostPercentageByDayPosted(float percentage, string raw_dat) {
 
 bool IsDayWithinThreeDays(string raw_dat) {
 
+    return IsDayWithinCertainTime(raw_dat, 3);
+
+}
+
+bool IsDayWithinFiveDays(string raw_dat) {
+
+    return IsDayWithinCertainTime(raw_dat, 5);
+
+}
+
+bool IsDayWithinCertainTime(string raw_dat, int max_day) {
+
     int day;
     try { 
         day = GetDayPosted(raw_dat);
@@ -203,7 +223,7 @@ bool IsDayWithinThreeDays(string raw_dat) {
         return false;
     }
 
-    if (day < 4) {
+    if (day <= max_day) {
         return true;
     } else {
         return false;
@@ -222,6 +242,22 @@ int GetDayPosted(string raw_dat) {
     }
 
     throw new Exception("Day not found");
+
+}
+
+string GetCompanyNameGlassdoor(string raw_dat) {
+
+    auto company_names_reg = regex(`['"]name['"]:\s*"\w+\s*\w*\s*\w*"`);
+    string company_name = matchFirst(raw_dat, company_names_reg)[0];
+     //regex(`"name":\s+"\w+"`), regex(`'name':"\w+"`), regex(`"name":\s+"\w+\s+\w+"`);
+
+    if (!company_name.empty) {
+
+        return (company_name.split(":")[1]).replace("\"", "");
+
+    }
+
+    return "";
 
 }
 
