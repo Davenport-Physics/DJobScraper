@@ -3,8 +3,11 @@ import std.json;
 import std.file;
 import std.conv;
 import std.algorithm;
+
 import linkedin;
 import glassdoor;
+import careerbuilder;
+
 import sharedstructs;
 
 static user_data mydata;

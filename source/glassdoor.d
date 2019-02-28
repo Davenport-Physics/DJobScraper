@@ -11,6 +11,7 @@ import std.parallelism;
 import core.cpuid;
 import d2sqlite3;
 import sharedstructs;
+import sharedfuncs;
 
 static int[string] glassdoor_ids;
 
@@ -59,7 +60,7 @@ void ScrapeGlassdoor(user_data mydata) {
 string[] ScrapeJobAndLocationWithKeywords(user_data mydata, string location, string job) {
 
     string search_html      = GetRawGlassdoorPage(job, location);
-    int total_page_count    = GetTotalGlassdoorPagesForSearch(search_html);
+    int total_page_count    = GetTotalPagesForSearch(search_html);
     return ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
 }
 
@@ -205,49 +206,6 @@ float BoostPercentageByDayPosted(float percentage, string raw_dat) {
 
 }
 
-bool IsDayWithinThreeDays(string raw_dat) {
-
-    return IsDayWithinCertainTime(raw_dat, 3);
-
-}
-
-bool IsDayWithinFiveDays(string raw_dat) {
-
-    return IsDayWithinCertainTime(raw_dat, 5);
-
-}
-
-bool IsDayWithinCertainTime(string raw_dat, int max_day) {
-
-    int day;
-    try { 
-        day = GetDayPosted(raw_dat);
-    } catch (Exception e) {
-        return false;
-    }
-
-    if (day <= max_day) {
-        return true;
-    } else {
-        return false;
-    }
-
-}
-
-int GetDayPosted(string raw_dat) {
-
-    auto day_posted         = regex(`\d+ days ago`);
-    string day_posted_split = matchFirst(raw_dat, day_posted)[0];
-    if (!day_posted_split.empty) {
-
-        return to!int(day_posted_split.split(" ")[0]);
-
-    }
-
-    throw new Exception("Day not found");
-
-}
-
 string GetCompanyNameGlassdoor(string raw_dat) {
 
     auto company_names_reg = regex(`['"]name['"]:\s*"(.*?)"`);
@@ -343,16 +301,6 @@ string GetAdditionalGlassdoorPages(string search_html) {
 
     string next_page = findSplit(findSplit(search_html, "<li class='page '><a href=\"/Job/")[2], "\">")[0];
     return to!string(get("https://www.glassdoor.com/Job/" ~ next_page));
-
-}
-
-int GetTotalGlassdoorPagesForSearch(string search_html) {
-
-    auto page_count_reg   = regex(`Page \d+ of \d+`);
-    string page_count_raw = (matchFirst(search_html, page_count_reg)[0]);
-    string[] page_count_split = page_count_raw.split(" ");
-
-    return to!int(page_count_split[page_count_split.length - 1]);
 
 }
 
