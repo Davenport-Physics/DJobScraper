@@ -72,14 +72,36 @@ void ScrapeCareerBuilder(user_data mydata) {
 
 }
 
+string[] StripAllUrlsOfDuplicatesCareerbuilder(string[] all_urls) {
+
+    string[] no_duplicates;
+    no_duplicates ~= all_urls[0];
+
+    foreach(url; all_urls) {
+
+        foreach(no_dup; no_duplicates) {
+
+
+
+        }
+
+    }
+    return no_duplicates;
+
+}
+
 string[] ScrapeAllUrlsCareerbuilder(user_data mydata, string location, string job) {
 
     string raw_dat  = GetStarterPageCareerBuilder(location, job);
     int total_pages = GetTotalPagesForSearch(raw_dat);
 
-    string[] all_urls = StripPageOfUrlsCareerbuilder(raw_dat);
+    string[] all_urls   = StripPageOfUrlsCareerbuilder(raw_dat);
+    string standard_url = GetCareerBuilderStandardUrl(location, job);
 
-    for (size_t i = 0; i < total_pages; i++) {
+    for (size_t i = 1; i < total_pages; i++) {
+
+        string next_url = standard_url ~ "?page_number=" ~ to!string(i+1);
+        all_urls ~= StripPageOfUrlsCareerbuilder(to!string(get(next_url)));
 
     }
     return all_urls;
@@ -88,12 +110,18 @@ string[] ScrapeAllUrlsCareerbuilder(user_data mydata, string location, string jo
 
 string GetStarterPageCareerBuilder(string location, string job) {
 
-    string url = "https://www.careerbuilder.com/jobs-"~
-                 job.replace(" ", "-")~
-                 "-in-"~
-                 location;
+    return to!string(get(GetCareerBuilderStandardUrl(location, job)));
 
-    return to!string(get(url));
+}
+
+string GetCareerBuilderStandardUrl(string location, string job) {
+
+    string url = "https://www.careerbuilder.com/jobs-"~
+             job.replace(" ", "-")~
+             "-in-"~
+             location;
+
+    return url;
 
 }
 
