@@ -39,7 +39,7 @@ import std.json;
 import std.parallelism;
 import core.cpuid;
 import d2sqlite3;
-import sharedstructs
+import sharedstructs;
 import sharedfuncs;
 
 
@@ -62,7 +62,7 @@ void ScrapeCareerBuilder(user_data mydata) {
 
         foreach(location; mydata.locations) {
 
-            all_urls ~= ScrapeJobAndLocationWithKeywordsCareerBuilder(mydata, location, job);
+            all_urls ~= ScrapeAllUrlsCareerbuilder(mydata, location, job);
 
         }
 
@@ -72,10 +72,17 @@ void ScrapeCareerBuilder(user_data mydata) {
 
 }
 
-string[] ScrapeJobAndLocationWithKeywordsCareerBuilder(user_data mydata, string location, string job) {
+string[] ScrapeAllUrlsCareerbuilder(user_data mydata, string location, string job) {
 
     string raw_dat  = GetStarterPageCareerBuilder(location, job);
     int total_pages = GetTotalPagesForSearch(raw_dat);
+
+    string[] all_urls = StripPageOfUrlsCareerbuilder(raw_dat);
+
+    for (size_t i = 0; i < total_pages; i++) {
+
+    }
+    return all_urls;
 
 }
 
@@ -87,6 +94,21 @@ string GetStarterPageCareerBuilder(string location, string job) {
                  location;
 
     return to!string(get(url));
+
+}
+
+string[] StripPageOfUrlsCareerbuilder(string raw_dat) {
+
+    string current_dat = raw_dat;
+    string[] all_urls_in_page;
+    while (canFind(current_dat, "href=\"/job/")) {
+
+        auto split = findSplit(findSplit(current_dat, "href=\"/job/")[2], "cbnsv\"");
+        all_urls_in_page ~= "https://www.careerbuilder.com/jobs/" ~ split[0] ~ "cbnsv";
+        current_dat = split[2];
+
+    }
+    return all_urls_in_page;
 
 }
 
