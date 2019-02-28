@@ -1,32 +1,3 @@
-/*
-
-junior dev dallas,tx
-
-https://www.careerbuilder.com/jobs-junior-dev-in-dallas,tx
-
-
-page count "Page 1 of 12"
-
-https://www.careerbuilder.com/jobs-junior-dev-in-dallas,tx?page_number=5
-
-
-job link
-
-<a data-gtm="jrp-job-list|job-title-click|21" data-job-did="JD869X6HFBC1DTT4LRX" data-company-did="" href="/job/JD869X6HFBC1DTT4LRX?ipath=JRG21&amp;keywords=junior+dev&amp;location=dallas%2Ctx&amp;searchid=51daf801-3000-4415-befd-7042c226b6d3%3AAPAb7IQ%2BSoz7mJ4J4lyo6AmeTet9f3ry8w%3D%3D&amp;siteid=cbnsv">Full Stack .NET Developer</a>
-
-which points to
-
-https://www.careerbuilder.com/jobs/JD869X6HFBC1DTT4LRX?ipath=JRG21&amp;keywords=junior+dev&amp;location=dallas%2Ctx&amp;searchid=51daf801-3000-4415-befd-7042c226b6d3%3AAPAb7IQ%2BSoz7mJ4J4lyo6AmeTet9f3ry8w%3D%3D&amp;siteid=cbnsv
-
-
-Company name
-
-"company_name":"Principium Recruiting"
-
-posted "Posted 3 days ago"
-
-*/
-
 module careerbuilder;
 
 import std.stdio;
