@@ -7,8 +7,7 @@ import std.algorithm;
 import std.string;
 import std.net.curl;
 import std.json;
-import std.parallelism;
-import core.cpuid;
+
 import d2sqlite3;
 import sharedstructs;
 import sharedfuncs;
@@ -52,8 +51,9 @@ void ScrapeGlassdoor(user_data mydata) {
         }
 
     }
-    job_posts = ParseJobURLSForRelevantPostings(StripAllUrlsOfDuplicates(all_urls), mydata.keywords);
-    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts);
+    string[] no_duplicates = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierGlassdoor);
+    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata.keywords, &GetCompanyNameGlassdoor);
+    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "glassdoor");
 
 }
 
@@ -62,13 +62,6 @@ string[] ScrapeJobAndLocationWithKeywords(user_data mydata, string location, str
     string search_html      = GetRawGlassdoorPage(job, location);
     int total_page_count    = GetTotalPagesForSearch(search_html);
     return ScrapeAllRelatedPagesGlassdoor(search_html, total_page_count);
-}
-
-void HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(user_data mydata, job_posting[] job_posts) {
-
-    DecreaseRelevancyOfPostings(job_posts, mydata.companies_to_avoid);
-    WriteAllGlassDoorUrlsToSQLTable(job_posts);
-
 }
 
 void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
@@ -80,129 +73,6 @@ void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
 
     }
     fp.close();
-
-}
-
-void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings) {
-
-    auto db = Database("DJSCRAPER.db");
-    Statement stmt = db.prepare("INSERT INTO glassdoor (raw_html, job, percentage, matched, "~
-                                "company_name, within_three_days, within_five_days) VALUES "~
-                                "(:raw_html, :job, :percentage, :matched, :company_name, "~
-                                ":within_three_days, :within_five_days)");
-
-    foreach(post; all_relevant_postings) {
-
-        if (post.url.length != 0) {
-            stmt.inject(post.raw_html, post.url, 
-                        post.percentage, post.matched_text, 
-                        post.company_name, post.within_three_days, 
-                        post.within_five_days);
-        }
-
-    }
-    stmt.finalize();
-    db.close();
-
-}
-
-void DecreaseRelevancyOfPostings(ref job_posting[] job_posts, string[] companies_to_avoid) {
-
-    foreach (ref post; job_posts) {
-
-        foreach (company; companies_to_avoid) {
-
-            if (canFind(post.raw_html, company)) {
-
-                post.percentage -= 0.25f;
-                break;
-
-            }
-
-        }
-
-    }
-
-}
-
-job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywords) {
-
-
-    job_posting[] posts = new job_posting[all_urls.length];
-
-    defaultPoolThreads(coresPerCPU()*2 - 1);
-    foreach(idx, url; taskPool.parallel(all_urls)) {
-
-        string raw_dat = "";
-        try{
-            raw_dat = to!string(get(url));
-        } catch (CurlException e) {
-            writeln(e);
-        }
-
-        string words_that_matched = "";
-        int total_words_matched = 0;
-
-        SetWordsThatMatched(raw_dat, keywords, words_that_matched, total_words_matched);
-
-        if (total_words_matched == 0) {
-            continue;
-        }
-
-        float percentage = BoostPercentageByDayPosted(to!float(total_words_matched) / to!float(keywords.length), raw_dat);
-        posts[idx] = GetJobPosting(raw_dat, url, percentage, words_that_matched);
-
-    }
-
-    return posts;
-
-
-}
-
-void SetWordsThatMatched(string raw_dat, string[] keywords, ref string words_that_matched, ref int total_words_matched) {
-
-    foreach(words; keywords) {
-
-        if (canFind(raw_dat, words)) {
-
-            words_that_matched  ~= words ~ " ";
-            total_words_matched += 1;
-
-        }
-
-    }
-
-}
-
-job_posting GetJobPosting(string raw_dat, string url, float percentage, string words_that_matched) {
-
-    job_posting post = {
-        raw_html:raw_dat, 
-        url:url,
-        percentage:percentage, 
-        matched_text:words_that_matched,
-        company_name:GetCompanyNameGlassdoor(raw_dat),
-        within_three_days:to!int(IsDayWithinThreeDays(raw_dat)),
-        within_five_days:to!int(IsDayWithinFiveDays(raw_dat))
-    };
-    return post;
-
-}
-
-float BoostPercentageByDayPosted(float percentage, string raw_dat) {
-
-    if (IsDayWithinThreeDays(raw_dat)) {
-        percentage += .1f;
-    } else if (IsDayWithinFiveDays(raw_dat)) {
-        percentage += .05;
-    } else {
-        percentage -= .1f;
-    }
-
-    if (percentage < 0.0f) {
-        percentage = 0.0f;
-    }
-    return percentage;
 
 }
 
@@ -247,31 +117,9 @@ string[] ScrapeAllRelatedPagesGlassdoor(string search_html, int total_page_count
     
 }
 
-string[] StripAllUrlsOfDuplicates(string[] all_urls) {
+string GetUniqueUrlIdentifierGlassdoor(string url) {
 
-    string[] no_duplicates;
-    no_duplicates ~= all_urls[0];
-    auto url_id = regex(`jobListingId=\d+`);
-
-    foreach (url; all_urls) {
-
-        bool found = false;
-        foreach (no_dups; no_duplicates) {
-
-            auto dup_match = (findSplit(no_dups, "jobListingId=")[2]);
-            auto url_match = (findSplit(url, "jobListingId=")[2]);
-            if (url_match == dup_match){
-                found = true;
-            }
-
-        }
-        if (!found) {
-            no_duplicates ~= url;
-        }
-
-    }
-
-    return no_duplicates;
+    return (findSplit(url, "jobListingId=")[2]);
 
 }
 

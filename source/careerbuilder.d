@@ -67,26 +67,29 @@ void ScrapeCareerBuilder(user_data mydata) {
         }
 
     }
-    //job_posts = ParseJobURLSForRelevantPostings(StripAllUrlsOfDuplicates(all_urls), mydata.keywords);
-    //HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts);
+    string[] no_duplicates = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierCareerbuilder);
+    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata.keywords, &GetCompanyNameCareerbuilder);
+    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "careerbuilder");
 
 }
 
-string[] StripAllUrlsOfDuplicatesCareerbuilder(string[] all_urls) {
+string GetUniqueUrlIdentifierCareerbuilder(string url) {
 
-    string[] no_duplicates;
-    no_duplicates ~= all_urls[0];
+    return findSplit(findSplit(url, "/job/")[2], "?")[0];
 
-    foreach(url; all_urls) {
+}
 
-        foreach(no_dup; no_duplicates) {
+string GetCompanyNameCareerbuilder(string raw_dat) {
 
+    auto company_name_reg = regex(`['"]company_name['"]:\s*"(.*?)"`);
+    string company_name   = matchFirst(raw_dat, company_name_reg)[0];
 
+    if (!company_name.empty) {
 
-        }
+        return (company_name.split(":")[1]).replace("\"", "");
 
     }
-    return no_duplicates;
+    return "";
 
 }
 

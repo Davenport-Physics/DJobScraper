@@ -3,6 +3,9 @@ import std.json;
 import std.file;
 import std.conv;
 import std.algorithm;
+import std.parallelism;
+import std.net.curl;
+import core.cpuid;
 
 import linkedin;
 import glassdoor;
@@ -28,6 +31,7 @@ void main() {
 
 void InitMisc() {
 
+    defaultPoolThreads(coresPerCPU()*2 - 1);
     InitGlassDoorIDs();
 
 }
@@ -35,6 +39,7 @@ void InitMisc() {
 void InitDBs() {
 
     InitGlassDoorDB();
+    InitCareerBuilderDB();
 
 }
 
@@ -72,12 +77,27 @@ void SetGenericLoginInformation(ref login_credentials creds, string website_info
 void StartScraping() {
 
     StartScrapingGlassdoor();
+    StartScrapingCareerbuilder();
 
 }
 
 void StartScrapingGlassdoor() {
 
-    ScrapeGlassdoor(mydata);
+    try {
+        ScrapeGlassdoor(mydata);
+    } catch (CurlException e) {
+        writeln(e);
+    }
+
+}
+
+void StartScrapingCareerbuilder() {
+
+    try {
+        ScrapeCareerBuilder(mydata);
+    } catch (CurlException e) {
+        writeln(e);
+    }
 
 }
 
