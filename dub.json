@@ -3,8 +3,14 @@
 	"authors": [
 		"Emma Davenport"
 	],
+	"lflags" : [
+		"-L/Users/edavenport/.dub/packages/d2sqlite3-0.18.1"
+	],
 	"dependencies": {
 		"d2sqlite3": "~>0.18.1"
+	},
+	"subConfigurations": {
+		"d2sqlite3":"all-included"
 	},
 	"description": "A job web scraper written in D.",
 	"copyright": "Copyright © 2019, Emma Davenport",
