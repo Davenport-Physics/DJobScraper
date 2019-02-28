@@ -198,11 +198,22 @@ bool IsDayWithinCertainTime(string raw_dat, int max_day) {
 
 int GetDayPosted(string raw_dat) {
 
-    auto day_posted         = regex(`\d+ days ago`);
-    string day_posted_split = matchFirst(raw_dat, day_posted)[0];
+    auto day_posted           = regex(`\d+ days ago`);
+    auto hours_posted         = regex(`\d+ hours ago`);
+    string day_posted_split   = matchFirst(raw_dat, day_posted)[0];
+    string hours_posted_split = matchFirst(raw_dat, hours_posted)[0];
     if (!day_posted_split.empty) {
 
         return to!int(day_posted_split.split(" ")[0]);
+
+    } else if (!hours_posted_split.empty) {
+
+        int hours = to!int(hours_posted_split.split("")[0]);
+        if (hours <= 24) {
+            return 1;
+        } else {
+            return 2;
+        }
 
     }
 
