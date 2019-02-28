@@ -3,6 +3,9 @@ module sharedfuncs;
 import std.stdio;
 import std.conv;
 import std.regex;
+import std.string;
+import std.net.curl;
+
 
 bool IsDayWithinThreeDays(string raw_dat) {
 
