@@ -135,7 +135,13 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
     defaultPoolThreads(coresPerCPU()*2 - 1);
     foreach(idx, url; taskPool.parallel(all_urls)) {
 
-        string raw_dat = to!string(get(url));
+        string raw_dat = "";
+        try{
+            raw_dat = to!string(get(url));
+        } catch (CurlException e) {
+            writeln(e);
+        }
+
         string words_that_matched = "";
         int total_words_matched = 0;
 
@@ -247,9 +253,8 @@ int GetDayPosted(string raw_dat) {
 
 string GetCompanyNameGlassdoor(string raw_dat) {
 
-    auto company_names_reg = regex(`['"]name['"]:\s*"\w+\s*\w*\s*\w*"`);
+    auto company_names_reg = regex(`['"]name['"]:\s*"(.*?)"`);
     string company_name = matchFirst(raw_dat, company_names_reg)[0];
-     //regex(`"name":\s+"\w+"`), regex(`'name':"\w+"`), regex(`"name":\s+"\w+\s+\w+"`);
 
     if (!company_name.empty) {
 
