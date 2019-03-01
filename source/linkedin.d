@@ -8,9 +8,6 @@ import std.string;
 import std.net.curl;
 import sharedstructs;
 
-static string cookiesFile = "cookies.txt";
-static HTTP http;
-
 void FindEmailFromLinkedIn(string company_name, string username, string password) {
 
     WriteLoginPageToHtml(LoginToLinkedInWithCredentials(username, password));
@@ -20,13 +17,9 @@ void FindEmailFromLinkedIn(string company_name, string username, string password
 
 string LoginToLinkedInWithCredentials(string username, string password) {
 
-    http = HTTP();
-    http.handle.set(CurlOption.cookiefile, cookiesFile);
-    http.handle.set(CurlOption.cookiejar , cookiesFile);
-
     string csrf_token  = GetCSRFTokenFromLinkedIn();
     char[] login_stuff = post("https://www.linkedin.com/uas/login-submit", 
-                        ["session_key'" : username, "session_password" : password, "loginCsrfParam" : csrf_token], http);
+                        ["session_key'" : username, "session_password" : password, "loginCsrfParam" : csrf_token], GetHTTPConnection());
 
     return to!string(login_stuff);
 
@@ -34,7 +27,7 @@ string LoginToLinkedInWithCredentials(string username, string password) {
 
 string GetCSRFTokenFromLinkedIn() {
 
-    string raw_main_page = to!string(get("https://www.linkedin.com", http));
+    string raw_main_page = to!string(get("https://www.linkedin.com", GetHTTPConnection()));
     auto content_before_value = findSplit(raw_main_page, "<input name=\"loginCsrfParam\" id=\"loginCsrfParam-login\" type=\"hidden\" value=\"")[2];
 
     return findSplit(content_before_value, "\"/>")[0];
@@ -44,7 +37,7 @@ string GetCSRFTokenFromLinkedIn() {
 string FindLinkedPeopleFromCompanySearch(string company) {
 
     string company_formatted_correctly = "" ~ "https://www.linkedin.com/search/results/people/?keywords=" ~ company.replace(" ", "%20") ~ "&origin=CLUSTER_EXPANSION";
-    return to!string(get(company_formatted_correctly, http));
+    return to!string(get(company_formatted_correctly, GetHTTPConnection()));
 
 }
 
@@ -57,7 +50,7 @@ void FindAllLinkedInPeopleHits(string company_linked_in) {
 void WriteLoginPageToHtml(string login_content) {
 
     File fp = File("login.html", "w+");
-    fp.writeln(login_content);
+    fp.writeln(to!string(get("https://www.linkedin.com/feed/", GetHTTPConnection())));
     fp.close();
 
 }
@@ -67,8 +60,20 @@ void FindPublicIdentifiers(string company_linked_in) {
     auto pub_identifier_after     = findSplit(company_linked_in, "&quot;publicIdentifier&quot;:&quot;");
     auto public_identifier_before = findSplit(pub_identifier_after[2], "&quot;")[0];
     
-    File fp = File("random.dat", "w+");
-    fp.writeln(company_linked_in);
-    fp.close();
+    //File fp = File("random.dat", "w+");
+    //fp.writeln(company_linked_in);
+    //fp.close();
+
+}
+
+HTTP GetHTTPConnection() {
+
+    static string cookiesFile = "cookies.txt";
+
+    auto http = HTTP();
+    http.handle.set(CurlOption.cookiefile, cookiesFile);
+    http.handle.set(CurlOption.cookiejar , cookiesFile);
+
+    return http;
 
 }
