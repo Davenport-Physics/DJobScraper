@@ -138,10 +138,7 @@ string GetRawGlassdoorPage(string job, string location) {
 string GetAdditionalGlassdoorPagesLinkOnly(string search_html) {
 
     string next_page = findSplit(findSplit(search_html, "<li class='page '><a href=\"/Job/")[2], "\">")[0];
-
-    auto link_split = findSplit(next_page, "_IP");
-
-    return "https://www.glassdoor.com/Job/" ~ link_split[0];
+    return "https://www.glassdoor.com/Job/" ~ findSplit(next_page, "_IP")[0];
 
 }
 

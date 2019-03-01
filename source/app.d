@@ -22,7 +22,8 @@ void main() {
 
     try {
         ParseMyDataJson();
-        StartScraping();
+        StartLinkedInSearch();
+        //StartScraping();
     } catch (Exception e) {
         writeln(e);
     }
@@ -98,6 +99,12 @@ void StartScrapingCareerbuilder() {
     } catch (CurlException e) {
         writeln(e);
     }
+
+}
+
+void StartLinkedInSearch() {
+
+    FindEmailFromLinkedIn("Centerbase", mydata.linkedin_credentials.username, mydata.linkedin_credentials.password);
 
 }
 
