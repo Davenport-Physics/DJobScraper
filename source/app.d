@@ -22,8 +22,8 @@ void main() {
 
     try {
         ParseMyDataJson();
-        StartLinkedInSearch();
-        //StartScraping();
+        //StartLinkedInSearch();
+        StartScraping();
     } catch (Exception e) {
         writeln(e);
     }
@@ -55,6 +55,7 @@ void ParseMyDataJson() {
     SetGenericDataWithJson(mydata.jobs, mydata_json["Job-titles"].array);
     SetGenericDataWithJson(mydata.locations, mydata_json["Locations"].array);
     SetGenericDataWithJson(mydata.keywords, mydata_json["Keywords"].array);
+    SetGenericDataWithJson(mydata.required_keywords, mydata_json["RequiredKeywords"].array);
     SetGenericDataWithJson(mydata.companies_to_avoid, mydata_json["AvoidCompanies"].array);
     SetGenericLoginInformation(mydata.linkedin_credentials, "LinkedInInfo", mydata_json);
 

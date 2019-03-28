@@ -10,6 +10,8 @@ import std.parallelism;
 import sharedstructs;
 import d2sqlite3;
 
+import sharedstructs;
+
 
 bool IsDayWithinThreeDays(string raw_dat) {
 
@@ -23,7 +25,7 @@ bool IsDayWithinFiveDays(string raw_dat) {
 
 }
 
-job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywords, string function(string) GetCompanyName) {
+job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, user_data mydata, string function(string) GetCompanyName, string function(string) GetJobTitle) {
 
     job_posting[] posts = new job_posting[all_urls.length];
 
@@ -39,14 +41,15 @@ job_posting[] ParseJobURLSForRelevantPostings(string[] all_urls, string[] keywor
         string words_that_matched = "";
         int total_words_matched = 0;
 
-        SetWordsThatMatched(raw_dat, keywords, words_that_matched, total_words_matched);
+        SetWordsThatMatched(raw_dat, mydata.keywords, words_that_matched, total_words_matched);
 
         if (total_words_matched == 0) {
             continue;
         }
 
-        float percentage = BoostPercentageByDayPosted(to!float(total_words_matched) / to!float(keywords.length), raw_dat);
-        posts[idx] = GetJobPosting(raw_dat, url, percentage, words_that_matched, GetCompanyName);
+        float percentage = BoostPercentageByDayPosted(to!float(total_words_matched) / to!float(mydata.keywords.length), raw_dat);
+        percentage       = GetPercentageBasedOnRequiredWords(percentage, words_that_matched, mydata.required_keywords);
+        posts[idx]       = GetJobPosting(raw_dat, url, percentage, words_that_matched, GetCompanyName, GetJobTitle);
 
     }
 
@@ -66,6 +69,21 @@ void SetWordsThatMatched(string raw_dat, string[] keywords, ref string words_tha
         }
 
     }
+
+}
+
+float GetPercentageBasedOnRequiredWords(float percentage, string words_that_matched, string[] required_keywords) {
+
+    foreach (keyword; required_keywords) {
+
+        if (!canFind(words_that_matched, keyword)) {
+
+            percentage -= .25;
+
+        }
+
+    }
+    return percentage;
 
 }
 
@@ -134,7 +152,7 @@ void DecreaseRelevancyOfPostings(ref job_posting[] job_posts, string[] companies
 
 }
 
-job_posting GetJobPosting(string raw_dat, string url, float percentage, string words_that_matched, string function(string) GetCompanyName) {
+job_posting GetJobPosting(string raw_dat, string url, float percentage, string words_that_matched, string function(string) GetCompanyName, string function(string) GetJobTitle) {
 
     job_posting post = {
         raw_html:raw_dat, 
@@ -142,6 +160,7 @@ job_posting GetJobPosting(string raw_dat, string url, float percentage, string w
         percentage:percentage, 
         matched_text:words_that_matched,
         company_name:GetCompanyName(raw_dat),
+        job_title:GetJobTitle(raw_dat),
         within_three_days:to!int(IsDayWithinThreeDays(raw_dat)),
         within_five_days:to!int(IsDayWithinFiveDays(raw_dat))
     };
@@ -159,16 +178,16 @@ void HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(user_data mydata, job_
 void WriteAllGlassDoorUrlsToSQLTable(job_posting[] all_relevant_postings, string table_name) {
 
     auto db = Database("DJSCRAPER.db");
-    Statement stmt = db.prepare("INSERT INTO " ~ table_name ~ " (raw_html, job, percentage, matched, "~
+    Statement stmt = db.prepare("INSERT INTO " ~ table_name ~ " (raw_html, job, percentage, matched, job_title, "~
                                 "company_name, within_three_days, within_five_days) VALUES "~
-                                "(:raw_html, :job, :percentage, :matched, :company_name, "~
+                                "(:raw_html, :job, :percentage, :matched, :job_title, :company_name, "~
                                 ":within_three_days, :within_five_days)");
 
     foreach(post; all_relevant_postings) {
 
         if (post.url.length != 0) {
             stmt.inject(post.raw_html, post.url, 
-                        post.percentage, post.matched_text, 
+                        post.percentage, post.matched_text, post.job_title, 
                         post.company_name, post.within_three_days, 
                         post.within_five_days);
         }
@@ -228,5 +247,19 @@ int GetTotalPagesForSearch(string search_html) {
     string[] page_count_split = page_count_raw.split(" ");
 
     return to!int(page_count_split[page_count_split.length - 1]);
+
+}
+
+string GetGenericDatFromJSONInHTML(string raw_dat, string reg) {
+
+    string dat = matchFirst(raw_dat, reg)[0];
+
+    if (!dat.empty) {
+        dat = (dat.split(":")[1]).replace("\"", "");
+        dat = dat.replace("\'", "");
+        return dat;
+    }
+
+    return "";
 
 }

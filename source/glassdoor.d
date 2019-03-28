@@ -31,7 +31,7 @@ void InitGlassDoorDB() {
 
     auto db = Database("DJSCRAPER.db");
     db.run("DROP TABLE IF EXISTS glassdoor");
-    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, company_name text, "~
+    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "~
            "within_three_days int, within_five_days int)");
 
     db.close();
@@ -52,7 +52,7 @@ void ScrapeGlassdoor(user_data mydata) {
 
     }
     string[] no_duplicates = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierGlassdoor);
-    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata.keywords, &GetCompanyNameGlassdoor);
+    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameGlassdoor, &GetJobTitleGlassdoor);
     HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "glassdoor");
 
 }
@@ -78,16 +78,13 @@ void WriteAllGlassDoorUrlsToFile(string[] all_urls) {
 
 string GetCompanyNameGlassdoor(string raw_dat) {
 
-    auto company_names_reg = regex(`['"]name['"]:\s*"(.*?)"`);
-    string company_name = matchFirst(raw_dat, company_names_reg)[0];
+    return GetGenericDatFromJSONInHTML(raw_dat, `['"]name['"]:\s*"(.*?)"`);
 
-    if (!company_name.empty) {
+}
 
-        return (company_name.split(":")[1]).replace("\"", "");
+string GetJobTitleGlassdoor(string raw_dat) {
 
-    }
-
-    return "";
+    return GetGenericDatFromJSONInHTML(raw_dat, `['"]jobTitle['"]\s*:\s*"(.*?)"`);
 
 }
 

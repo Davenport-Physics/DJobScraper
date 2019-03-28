@@ -18,7 +18,7 @@ void InitCareerBuilderDB() {
 
     auto db = Database("DJSCRAPER.db");
     db.run("DROP TABLE IF EXISTS careerbuilder");
-    db.run("CREATE TABLE careerbuilder (raw_html text, job text, percentage real, matched text, company_name text, "~
+    db.run("CREATE TABLE careerbuilder (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "~
            "within_three_days int, within_five_days int)");
 
     db.close();
@@ -39,7 +39,7 @@ void ScrapeCareerBuilder(user_data mydata) {
 
     }
     string[] no_duplicates = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierCareerbuilder);
-    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata.keywords, &GetCompanyNameCareerbuilder);
+    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameCareerbuilder, &GetJobTitleCareerbuilder);
     HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "careerbuilder");
 
 }
@@ -52,15 +52,13 @@ string GetUniqueUrlIdentifierCareerbuilder(string url) {
 
 string GetCompanyNameCareerbuilder(string raw_dat) {
 
-    auto company_name_reg = regex(`['"]company_name['"]:\s*"(.*?)"`);
-    string company_name   = matchFirst(raw_dat, company_name_reg)[0];
+    return GetGenericDatFromJSONInHTML(raw_dat, `['"]company_name['"]:\s*"(.*?)"`);
 
-    if (!company_name.empty) {
+}
 
-        return (company_name.split(":")[1]).replace("\"", "");
+string GetJobTitleCareerbuilder(string raw_dat) {
 
-    }
-    return "";
+    return GetGenericDatFromJSONInHTML(raw_dat, `['"]title['"]\s*:\s*"(.*?)"`);
 
 }
 
