@@ -7,11 +7,26 @@ import std.algorithm;
 import std.string;
 import std.net.curl;
 import std.parallelism;
+
 import sharedstructs;
 import d2sqlite3;
-
 import sharedstructs;
 
+
+string[] GetAllUrlsGeneric(user_data mydata, string[] function(user_data, string, string) ScrapeUrlFunc) {
+
+    string[] all_urls;
+    foreach(job; mydata.jobs) {
+
+        foreach(location; mydata.locations) {
+
+            all_urls ~= ScrapeUrlFunc(mydata, location, job);
+        }
+
+    }
+    return all_urls;
+
+}
 
 bool IsDayWithinThreeDays(string raw_dat) {
 

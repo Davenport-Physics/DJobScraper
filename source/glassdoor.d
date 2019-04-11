@@ -27,32 +27,11 @@ void InitGlassDoorIDs() {
 
 }
 
-void InitGlassDoorDB() {
-
-    auto db = Database("DJSCRAPER.db");
-    db.run("DROP TABLE IF EXISTS glassdoor");
-    db.run("CREATE TABLE glassdoor (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "~
-           "within_three_days int, within_five_days int)");
-
-    db.close();
-
-}
-
 void ScrapeGlassdoor(user_data mydata) {
 
-    string[] all_urls;
-    job_posting[] job_posts;
-    foreach(job; mydata.jobs) {
-
-        foreach(location; mydata.locations) {
-
-            all_urls ~= ScrapeJobAndLocationWithKeywords(mydata, location, job);
-
-        }
-
-    }
-    string[] no_duplicates = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierGlassdoor);
-    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameGlassdoor, &GetJobTitleGlassdoor);
+    string[] all_urls       = GetAllUrlsGeneric(mydata, &ScrapeJobAndLocationWithKeywords);
+    string[] no_duplicates  = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierGlassdoor);
+    job_posting[] job_posts = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameGlassdoor, &GetJobTitleGlassdoor);
     HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "glassdoor");
 
 }

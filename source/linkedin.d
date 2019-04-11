@@ -6,6 +6,7 @@ import std.regex;
 import std.algorithm;
 import std.string;
 import std.net.curl;
+
 import sharedstructs;
 
 void FindEmailFromLinkedIn(string company_name, string username, string password) {

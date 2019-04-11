@@ -9,37 +9,16 @@ import std.net.curl;
 import std.json;
 import std.parallelism;
 import core.cpuid;
+
 import d2sqlite3;
 import sharedstructs;
 import sharedfuncs;
 
-
-void InitCareerBuilderDB() {
-
-    auto db = Database("DJSCRAPER.db");
-    db.run("DROP TABLE IF EXISTS careerbuilder");
-    db.run("CREATE TABLE careerbuilder (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "~
-           "within_three_days int, within_five_days int)");
-
-    db.close();
-
-}
-
 void ScrapeCareerBuilder(user_data mydata) {
 
-    string[] all_urls;
-    job_posting[] job_posts;
-    foreach(job; mydata.jobs) {
-
-        foreach(location; mydata.locations) {
-
-            all_urls ~= ScrapeAllUrlsCareerbuilder(mydata, location, job);
-
-        }
-
-    }
-    string[] no_duplicates = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierCareerbuilder);
-    job_posts              = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameCareerbuilder, &GetJobTitleCareerbuilder);
+    string[] all_urls       = GetAllUrlsGeneric(mydata, &ScrapeAllUrlsCareerbuilder);
+    string[] no_duplicates  = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierCareerbuilder);
+    job_posting[] job_posts = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameCareerbuilder, &GetJobTitleCareerbuilder);
     HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "careerbuilder");
 
 }
