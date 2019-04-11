@@ -1,4 +1,5 @@
 import std.stdio;
+import std.format;
 import std.json;
 import std.file;
 import std.conv;
@@ -7,6 +8,8 @@ import std.parallelism;
 import std.net.curl;
 import core.cpuid;
 
+import d2sqlite3;
+
 import linkedin;
 import glassdoor;
 import careerbuilder;
@@ -14,6 +17,7 @@ import careerbuilder;
 import sharedstructs;
 
 static user_data mydata;
+static string[] job_boards = ["glassdoor" , "careerbuilder"];
 
 void main() {
 
@@ -39,8 +43,15 @@ void InitMisc() {
 
 void InitDBs() {
 
-    InitGlassDoorDB();
-    InitCareerBuilderDB();
+    auto db = Database("DJSCRAPER.db");
+    foreach (board; job_boards) {
+
+        db.run(format!"DROP TABLE IF EXISTS %s"(board));
+        db.run(format!"CREATE TABLE %s (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "(board)~
+           "within_three_days int, within_five_days int)");
+
+    }
+    db.close();
 
 }
 
