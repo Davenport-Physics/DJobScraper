@@ -13,6 +13,14 @@ import sharedstructs;
 import sharedfuncs;
 
 static int[string] glassdoor_ids;
+static job_boards_gen job_board = 
+{
+    ScrapeUrl:&ScrapeJobAndLocationWithKeywords,
+    GetCompanyName:&GetCompanyNameGlassdoor,
+    GetJobTitle:&GetJobTitleGlassdoor,
+    UrlIdentifier:&GetUniqueUrlIdentifierGlassdoor,
+    board:"glassdoor"
+};
 
 void InitGlassDoorIDs() {
 
@@ -24,15 +32,6 @@ void InitGlassDoorIDs() {
     glassdoor_ids["Fort Worth,Tx"]     = 1139993;
     glassdoor_ids["Grapevine,Tx"]      = 1139999;
     glassdoor_ids["Southlake,Tx"]      = 1140065; 
-
-}
-
-void ScrapeGlassdoor(user_data mydata) {
-
-    string[] all_urls       = GetAllUrlsGeneric(mydata, &ScrapeJobAndLocationWithKeywords);
-    string[] no_duplicates  = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierGlassdoor);
-    job_posting[] job_posts = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameGlassdoor, &GetJobTitleGlassdoor);
-    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "glassdoor");
 
 }
 

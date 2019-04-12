@@ -14,24 +14,32 @@ import linkedin;
 import glassdoor;
 import careerbuilder;
 
+import sharedfuncs;
 import sharedstructs;
 
 static user_data mydata;
-static string[] job_boards = ["glassdoor" , "careerbuilder"];
+job_boards_gen[] job_boards;
 
 void main() {
 
-    InitDBs();
-    InitMisc();
+
+    Init();
 
     try {
         ParseMyDataJson();
-        //StartLinkedInSearch();
         StartScraping();
     } catch (Exception e) {
         writeln(e);
     }
 
+}
+
+void Init() {
+
+    job_boards = [careerbuilder.job_board, glassdoor.job_board];
+    InitDBs();
+    InitMisc();
+    
 }
 
 void InitMisc() {
@@ -44,10 +52,10 @@ void InitMisc() {
 void InitDBs() {
 
     auto db = Database("DJSCRAPER.db");
-    foreach (board; job_boards) {
+    foreach (job_board; job_boards) {
 
-        db.run(format!"DROP TABLE IF EXISTS %s"(board));
-        db.run(format!"CREATE TABLE %s (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "(board)~
+        db.run(format!"DROP TABLE IF EXISTS %s"(job_board.board));
+        db.run(format!"CREATE TABLE %s (raw_html text, job text, percentage real, matched text, job_title text, company_name text, "(job_board.board)~
            "within_three_days int, within_five_days int)");
 
     }
@@ -89,27 +97,14 @@ void SetGenericLoginInformation(ref login_credentials creds, string website_info
 
 void StartScraping() {
 
-    StartScrapingGlassdoor();
-    StartScrapingCareerbuilder();
+    foreach (job_board; job_boards) {
 
-}
+        try {
+            GenericScrape(job_board, mydata);
+        } catch (CurlException e) {
+            writeln(e);
+        }
 
-void StartScrapingGlassdoor() {
-
-    try {
-        ScrapeGlassdoor(mydata);
-    } catch (CurlException e) {
-        writeln(e);
-    }
-
-}
-
-void StartScrapingCareerbuilder() {
-
-    try {
-        ScrapeCareerBuilder(mydata);
-    } catch (CurlException e) {
-        writeln(e);
     }
 
 }

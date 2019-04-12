@@ -30,3 +30,13 @@ struct job_posting {
     int within_five_days;
 
 };
+
+struct job_boards_gen {
+
+    string[] function(user_data, string, string) ScrapeUrl;
+    string function(string) GetCompanyName;
+    string function(string) GetJobTitle;
+    string function(string) UrlIdentifier;
+    string board;
+
+}

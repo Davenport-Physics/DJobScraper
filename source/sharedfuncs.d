@@ -12,6 +12,14 @@ import sharedstructs;
 import d2sqlite3;
 import sharedstructs;
 
+void GenericScrape(job_boards_gen job_board, user_data mydata) {
+
+    string[] all_urls       = GetAllUrlsGeneric(mydata, job_board.ScrapeUrl);
+    string[] no_duplicates  = StripAllUrlsOfDuplicates(all_urls, job_board.UrlIdentifier);
+    job_posting[] job_posts = ParseJobURLSForRelevantPostings(no_duplicates, mydata, job_board.GetCompanyName, job_board.GetJobTitle);
+    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, job_board.board);
+
+}
 
 string[] GetAllUrlsGeneric(user_data mydata, string[] function(user_data, string, string) ScrapeUrlFunc) {
 

@@ -14,14 +14,14 @@ import d2sqlite3;
 import sharedstructs;
 import sharedfuncs;
 
-void ScrapeCareerBuilder(user_data mydata) {
-
-    string[] all_urls       = GetAllUrlsGeneric(mydata, &ScrapeAllUrlsCareerbuilder);
-    string[] no_duplicates  = StripAllUrlsOfDuplicates(all_urls, &GetUniqueUrlIdentifierCareerbuilder);
-    job_posting[] job_posts = ParseJobURLSForRelevantPostings(no_duplicates, mydata, &GetCompanyNameCareerbuilder, &GetJobTitleCareerbuilder);
-    HandleDecreasingAllJobPostsForRelevancyAndSQlWriting(mydata, job_posts, "careerbuilder");
-
-}
+static job_boards_gen job_board = 
+{
+    ScrapeUrl:&ScrapeAllUrlsCareerbuilder,
+    GetCompanyName:&GetCompanyNameCareerbuilder,
+    GetJobTitle:&GetJobTitleCareerbuilder,
+    UrlIdentifier:&GetUniqueUrlIdentifierCareerbuilder,
+    board:"careerbuilder"
+};
 
 string GetUniqueUrlIdentifierCareerbuilder(string url) {
 
